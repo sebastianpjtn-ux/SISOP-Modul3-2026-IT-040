@@ -770,7 +770,35 @@ Keduanya lanjut bersenang-senang :D
 
 # MOBIL LEGEN!11!! Main yUK!!!
 
-    Setelah membuat sistem Wired, Sunny dan Mado, terinspirasi dari D&D, ingin mencoba membuat sistem game. Gamenya akan text-based, karena mereka baru mulai. Mereka memutuskan untuk membuat Game Engine sendiri karena... kenapa tidak?
-    Nama gamenya Eterion. Mereka akan roleplay 
+    Setelah membuat sistem Wired, Sunny dan Mado, terinspirasi dari D&D, ingin mencoba membuat sistem game online. Gamenya akan text-based, karena mereka baru mulai. Mereka memutuskan untuk membuat Game Engine sendiri karena... kenapa tidak?
+    Nama gamenya Eterion. Mereka akan roleplay sebagai karakter Pujo dan Eterion.
+
+## 1. Arena Pertempuran
+  Arena Pertempuran akan dibuat, bentuk awalnya seperti ini:
+  <img width="537" height="142" alt="image" src="https://github.com/user-attachments/assets/1e12498b-4882-49c2-ac87-f9b9d553b6b8" />
+
+  Di program, akan terlihat seperti ini:
+```c
+
+```
+
+## 2. Register dan Login
+
+
+## 3. Player nyambung ke server
+
+## 4. Cek Username yang sudah ada dari Register & Login
+
+## 5. Stat Awal
+
+## 6. Matchmaking
+
+## 7. Attack & Ultimate
+
+## 8. Hasil Battle
+
+## 9. Beli Senjata
+
+## 10. Log Battle
 
 
