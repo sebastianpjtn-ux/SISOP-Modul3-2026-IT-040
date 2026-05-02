@@ -784,26 +784,394 @@ Keduanya lanjut bersenang-senang :D
 
   Di program, akan terlihat seperti ini:
 ```c
+#ifndef ARENA_H
+#define ARENA_H
+#include <sys/ipc.h>
+#include <sys/msg.h>
 
+#define SHM_KEY 1234
+#define MSG_KEY 5678
+
+typedef struct{
+    int hp1, hp2;
+    int active;
+    char player1[50], player2[50];
+    char logs[5][100];
+    int log_index;
+}Battle;
+
+typedef struct{
+        int status, choice;
+        char username[50], password[50];
+        Battle battle;
+}SharedData;
+
+typedef struct{
+        long type;
+        char text[100];
+}Message;
+
+#endif
 ```
 
-## 2. Register dan Login
+## 2. Siapin servernya
+```c
+//dari orion
+void register_user(const char *username, const char *password){
+    FILE *f = fopen("users.txt", "a");
+    if(!f) return;
+    fprintf(f, "%s:%s:%d:%d:%d:%d\n", username, password, 150, 1, 0, 0);
+    fclose(f);
+//dari Eternal
+int main(){
+    int shmid = shmget(SHM_KEY, sizeof(SharedData), 0666);
+     if(shmid == -1){
+        printf("Orion are you there?\n");
+        return 0;
+    }
+}
 
-
+```
 ## 3. Player nyambung ke server
+```c
+//dari Eternal
+void menu() {
+    printf("1. Register\n");
+    printf("2. Login\n");
+    printf("3. Exit\n");
+    printf("4. Battle\n");
+    printf("5. Armory\n");
+    printf("6. History\n");
+    printf("Choice: ");
+}
+int is_logged_in(const char *username){
+    for(int i=0;i<logged_count;i++){
+        if(strcmp(logged_in[i], username)==0) return 1;
+    }
+    return 0;
+}
 
-## 4. Cek Username yang sudah ada dari Register & Login
+int getUserDataFull(const char *username, int *gold, int *lvl, int *xp, int *weapon){
+    FILE *f = fopen("users.txt", "r");
+    if(!f) return 0;
+
+    char u[50], p[50];
+
+    while(fscanf(f, "%[^:]:%[^:]:%d:%d:%d:%d\n", u, p, gold, lvl, xp, weapon) != EOF){
+        if(strcmp(u, username) == 0){
+            fclose(f);
+            return 1;
+        }
+    }
+    fclose(f);
+    return 0;
+}
+```
+
+## 4. Register & Login
+```c
+//dari eternal
+int main(){
+ while (1) {
+        menu();
+        scanf("%d", &choice);
+        if(choice < 1 || choice > 6){
+            printf("Pilihan tidak valid!\n");
+            continue;
+        }
+        if (choice == 3){//exit
+            break;
+        }
+        if((choice == 4 || choice == 5 || choice == 6) && !logged){//kalo user blm login, bakal di kick
+            printf("Login dulu!\n");
+            continue;
+        }
+        if(choice == 5){
+            data->choice = 7; // mapping ke server
+        }else if(choice == 6){
+            data->choice = 8;
+        }else{
+            data->choice = choice;
+        }
+}
+//dari Orion
+int user_exists(const char *username){
+    int g,l,x,w;
+    return getUserDataFull(username, &g,&l,&x,&w);
+}
+
+void register_user(const char *username, const char *password){
+    FILE *f = fopen("users.txt", "a");
+    if(!f) return;
+    fprintf(f, "%s:%s:%d:%d:%d:%d\n", username, password, 150, 1, 0, 0);
+    fclose(f);
+}
+
+int login_user(const char *username, const char *password, int *gold, int *lvl, int *xp){
+    int weapon;
+    FILE *f = fopen("users.txt", "r");
+    if(!f) return 0;
+
+    char u[50], p[50];
+
+    while(fscanf(f, "%[^:]:%[^:]:%d:%d:%d:%d\n", u, p, gold, lvl, xp, &weapon) != EOF){
+        if(strcmp(u, username)==0 && strcmp(p, password)==0){
+            fclose(f);
+            return 1;
+        }
+    }
+    fclose(f);
+    return 0;
+}
+```
 
 ## 5. Stat Awal
+```c
+//dari orion
+int getUserDataFull(const char *username, int *gold, int *lvl, int *xp, int *weapon){
+    FILE *f = fopen("users.txt", "r");
+    if(!f) return 0;
+
+    char u[50], p[50];
+
+    while(fscanf(f, "%[^:]:%[^:]:%d:%d:%d:%d\n", u, p, gold, lvl, xp, weapon) != EOF){
+        if(strcmp(u, username) == 0){
+            fclose(f);
+            return 1;
+        }
+    }
+    fclose(f);
+    return 0;
+}
+
+else if(data->choice == 2){
+                if(login_user(data->username,data->password,&gold,&lvl,&xp)){
+                    if(is_logged_in(data->username))
+                        sprintf(reply.text,"User sudah login!");
+                    else{
+                        if(logged_count < 100)
+                            strcpy(logged_in[logged_count++], data->username);
+                        sprintf(reply.text,"Login berhasil!\nGold:%d\nLvl:%d\nXP:%d",gold,lvl,xp);
+                    }
+                }else
+                    sprintf(reply.text,"Login gagal!");
+            }
+```
 
 ## 6. Matchmaking
+```c
+//dari orion
+ else if(data->choice == 4){
+                if(waiting==0){
+                    waiting=1;
+                    strcpy(waiting_user,data->username);
+                    sprintf(reply.text,"Mencari lawan...");
+                    msgsnd(msgid,&reply,sizeof(reply.text),0);
+
+                    sleep(35);
+
+                    if(waiting == 1 && strcmp(waiting_user, data->username) == 0){
+                        waiting = 0;
+
+                        strcpy(data->battle.player1, data->username);
+                        strcpy(data->battle.player2, "Monster");
+
+                        data->battle.hp1 = 100;
+                        data->battle.hp2 = 100;
+
+                        data->battle.active = 1;
+                        data->battle.log_index = 0;
+
+                        sprintf(reply.text,"Tidak ada lawan. Melawan monster!");
+                    }
+                }else{
+                    int g1,l1,xp1,w1;
+                    int g2,l2,xp2,w2;
+
+                    getUserDataFull(waiting_user,&g1,&l1,&xp1,&w1);
+                    getUserDataFull(data->username,&g2,&l2,&xp2,&w2);
+
+                    data->battle.hp1 = 100 + (xp1/10);
+                    data->battle.hp2 = 100 + (xp2/10);
+
+                    strcpy(data->battle.player1,waiting_user);
+                    strcpy(data->battle.player2,data->username);
+
+                    data->battle.active = 1;
+                    data->battle.log_index = 0;
+
+                    waiting = 0;
+
+                    sprintf(reply.text,"Match ditemukan!");
+                }
+            }
+
+ if(data->battle.active){
+            while(data->battle.active){
+                printf("HP-mu: %d | Musuh: %d\n", data->battle.hp1, data->battle.hp2);
+                
+                for(int i = 0; i < 5; i++){
+                    printf("%s\n", data->battle.logs[i]);
+                }
+                char cmd;
+                scanf(" %c", &cmd);
+                
+                if(cmd == 'a'){
+                    data->choice = 5;
+                }
+                else if(cmd == 'u'){
+                    data->choice = 6;
+                }else{
+                    printf("Input tidak valid!\n");
+                    continue;
+                }
+                
+                data->status = 1;
+                
+                while(data->status == 1){
+                    usleep(10000);
+                }
+                
+                Message reply2;
+                msgrcv(msgid, &reply2, sizeof(reply2.text), 2, 0);
+                printf("%s\n", reply2.text);
+                
+            }
+        }    
+        printf("Battle selesai!\n");
+        printf("\n-------------------\n");
+```
 
 ## 7. Attack & Ultimate
+```c
+ else if(data->choice == 5 || data->choice == 6){
+                int g,l,xp_now,weapon;
+                getUserDataFull(data->username,&g,&l,&xp_now,&weapon);
+
+                int base = 10 + (xp_now/50) + weapon;
+                int damage;
+
+                if(data->choice == 6 && weapon > 0)
+                    damage = base * 3;
+                else
+                    damage = base;
+
+                sleep(1);
+
+                if(strcmp(data->username,data->battle.player1)==0)
+                    data->battle.hp2 -= damage;
+                else
+                    data->battle.hp1 -= damage;
+
+                snprintf(data->battle.logs[data->battle.log_index%5],100,"%s hit %d dmg",data->username,damage);
+                data->battle.log_index++;
+
+                if(data->battle.hp1<=0 || data->battle.hp2<=0){
+                    data->battle.active=0;
+
+                    if(data->battle.hp1<=0){
+                        update_user(data->battle.player2,1);
+                        update_user(data->battle.player1,0);
+                        save_history(data->battle.player2, data->battle.player1, 1);
+                        save_history(data->battle.player1, data->battle.player2, 0);
+                    }else{
+                        update_user(data->battle.player1,1);
+                        update_user(data->battle.player2,0);
+                        save_history(data->battle.player1, data->battle.player2, 1);
+                        save_history(data->battle.player2, data->battle.player1, 0);
+                    }
+                }
+
+                sprintf(reply.text,"Attack!");
+            }
+```
 
 ## 8. Hasil Battle
+```c
+void update_user(const char *username, int win){
+    FILE *f = fopen("users.txt", "r");
+    FILE *temp = fopen("temp.txt", "w");
+    if(!f || !temp) return;
+
+    char u[50], p[50];
+    int gold,lvl,xp,weapon;
+
+    while(fscanf(f, "%[^:]:%[^:]:%d:%d:%d:%d\n", u,p,&gold,&lvl,&xp,&weapon) != EOF){
+        if(strcmp(u, username)==0){
+            if(win){
+                xp += 50;
+                gold += 120;
+            }else{
+                xp += 15;
+                gold += 30;
+            }
+            lvl = (xp/100)+1;
+        }
+        fprintf(temp,"%s:%s:%d:%d:%d:%d\n", u,p,gold,lvl,xp,weapon);
+    }
+
+    fclose(f);
+    fclose(temp);
+    remove("users.txt");
+    rename("temp.txt","users.txt");
+}
+```
 
 ## 9. Beli Senjata
+```c
+void buy_weapon(const char *username){
+    FILE *f = fopen("users.txt", "r");
+    FILE *temp = fopen("temp.txt", "w");
+    if(!f || !temp) return;
+
+    char u[50], p[50];
+    int gold,lvl,xp,weapon;
+
+    while(fscanf(f,"%[^:]:%[^:]:%d:%d:%d:%d\n", u,p,&gold,&lvl,&xp,&weapon)!=EOF){
+        if(strcmp(u,username)==0){
+            if(gold>=100){
+                gold-=100;
+                weapon+=10;
+            }
+        }
+        fprintf(temp,"%s:%s:%d:%d:%d:%d\n", u,p,gold,lvl,xp,weapon);
+    }
+
+    fclose(f);
+    fclose(temp);
+    remove("users.txt");
+    rename("temp.txt","users.txt");
+}
+```
 
 ## 10. Log Battle
+```c
+void save_history(const char *username, const char *opponent, int win){
+    char filename[100];
+    sprintf(filename, "history_%s.txt", username);
+
+    FILE *f = fopen(filename, "a");
+    if(!f) return;
+
+    time_t t = time(NULL);
+    struct tm *tm = localtime(&t);
+
+    int xp = win ? 50 : 15;
+
+    fprintf(f, "%02d:%02d|%s|%s|+%d\n",
+            tm->tm_hour, tm->tm_min,
+            opponent,
+            win ? "WIN" : "LOSS",
+            xp);
+
+    fclose(f);
+}
+```
+
+
+## Hasil
+<img width="576" height="481" alt="Main game Onlen tanpa akun" src="https://github.com/user-attachments/assets/0a3bfcf9-c58d-44b6-aaa6-20e27b3005d8" />
+<img width="517" height="187" alt="Keluar dari game" src="https://github.com/user-attachments/assets/81d80a28-d9ac-447d-a40d-4adcb72adf55" />
+
 
 
