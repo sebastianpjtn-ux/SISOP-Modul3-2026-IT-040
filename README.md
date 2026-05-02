@@ -330,6 +330,7 @@ history.log dari terminal
 
 
 ## Kode Server
+```c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -631,7 +632,10 @@ int main(){
 
     return 0;
 }
+```
+
 ## Kode Client
+```c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -742,6 +746,7 @@ int main(){
     close(sock);
     return 0;
 }
+```
 
 ## Foto The Wired
 ### Server berjalan
